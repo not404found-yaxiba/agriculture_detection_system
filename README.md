@@ -117,14 +117,6 @@ agriculture_detection_system/          # 项目根目录
     output_dir: outputs/weed_results
     ```
 
-##  📖 使用指南
-###  Web界面使用  
-1.访问 http://127.0.0.1:5000  
-
-2.上传图片并选择检测模式  
-
-3.查看检测结果  
-
 ##  🏋️ 训练说明
 
 # apple
