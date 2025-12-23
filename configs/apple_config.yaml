@@ -1,5 +1,5 @@
 model_path: ../models/apple/best.pt  # 相对于configs文件夹
-confidence_threshold: 0.5
+confidence_threshold: 0.3
 classes:
   0: apple
 colors:
