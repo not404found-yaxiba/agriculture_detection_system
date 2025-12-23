@@ -1,0 +1,13 @@
+# 绝对路径，确保没问题
+path: D:/apple_detection_roboflow/apple.v10i.yolov5pytorch
+
+# 相对路径（相对于上面的path）
+train: train/images
+val: valid/images
+test: test/images
+
+# 类别数量
+nc: 1
+
+# 类别名称
+names: ['apple']

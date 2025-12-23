@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>农业检测系统</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #4CAF50; text-align: center; }
+        .upload-box { border: 2px dashed #ccc; padding: 30px; text-align: center; margin: 20px 0; }
+        button { background: #4CAF50; color: white; padding: 12px 24px; border: none; cursor: pointer; font-size: 16px; }
+        button:hover { background: #45a049; }
+        .result { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
+        img { max-width: 100%; border: 1px solid #ddd; margin: 10px 0; }
+        .mode-select { margin: 20px 0; text-align: center; }
+        .mode-select label { margin: 0 15px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>🍎🌿 农业检测系统</h1>
+    
+    <form action="/detect" method="post" enctype="multipart/form-data">
+        <div class="mode-select">
+            <label><input type="radio" name="mode" value="apple" checked> 🍎 苹果检测</label>
+            <label><input type="radio" name="mode" value="weed"> 🌿 杂草检测</label>
+            <label><input type="radio" name="mode" value="both"> 🍎🌿 两者都检测</label>
+        </div>
+        
+        <div class="upload-box">
+            <input type="file" name="file" accept=".jpg,.jpeg,.png,.bmp" required>
+            <p>点击选择图片或拖拽到此处 (支持JPG、PNG、BMP格式)</p>
+        </div>
+        
+        <div style="text-align: center;">
+            <button type="submit">开始检测</button>
+        </div>
+    </form>
+    
+    {% if result %}
+    <div class="result">
+        <h2>检测结果</h2>
+        
+        {% if apple_img %}
+        <div>
+            <h3>🍎 苹果检测结果</h3>
+            <p>检测到 {{ apple_count }} 个苹果</p>
+            <img src="{{ apple_img }}" alt="苹果检测结果">
+        </div>
+        {% endif %}
+        
+        {% if weed_img %}
+        <div>
+            <h3>🌿 杂草检测结果</h3>
+            <p>检测到 {{ weed_count }} 个杂草</p>
+            <img src="{{ weed_img }}" alt="杂草检测结果">
+        </div>
+        {% endif %}
+        
+        {% if not apple_img and not weed_img %}
+        <p>没有检测到目标</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</body>
+</html>
