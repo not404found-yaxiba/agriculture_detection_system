@@ -1,9 +1,10 @@
 import os
 import sys
 import importlib.util
-from flask import Flask, request, render_template, send_from_directory
+from flask import Flask, request, render_template, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
 import cv2
+import json
 
 # ========== 路径配置 ==========
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -53,11 +54,11 @@ try:
     AppleDetector = getattr(apple_module, "AppleDetector")
     WeedDetector = getattr(weed_module, "WeedDetector")
 
-    print(f"✅ AppleDetector类: {AppleDetector}")
-    print(f"✅ WeedDetector类: {WeedDetector}")
+    print(f" AppleDetector类: {AppleDetector}")
+    print(f" WeedDetector类: {WeedDetector}")
 
 except Exception as e:
-    print(f"❌ 导入失败: {e}")
+    print(f" 导入失败: {e}")
     import traceback
     traceback.print_exc()
     exit(1)
@@ -74,6 +75,7 @@ def allowed_file(filename):
 # ========== 全局检测器实例 ==========
 apple_detector = None
 weed_detector = None
+current_image_path = None  # 存储当前处理的图片路径
 
 def init_detectors():
     global apple_detector, weed_detector
@@ -81,7 +83,7 @@ def init_detectors():
     try:
         original_cwd = os.getcwd()
         os.chdir(PROJECT_ROOT)
-        print(f"📂 切换到项目根目录: {PROJECT_ROOT}")
+        print(f" 切换到项目根目录: {PROJECT_ROOT}")
         
         apple_config_path = 'configs/apple_config.yaml'
         weed_config_path = 'configs/weed_config.yaml'
@@ -90,7 +92,7 @@ def init_detectors():
         print(f"📄 杂草配置文件: {weed_config_path}")
         
         if not os.path.exists(apple_config_path):
-            print(f"❌ 配置文件不存在: {apple_config_path}")
+            print(f" 配置文件不存在: {apple_config_path}")
             os.chdir(original_cwd)
             return False
         
@@ -105,11 +107,11 @@ def init_detectors():
             return False
         
         os.chdir(original_cwd)
-        print("✅ 检测器初始化成功")
+        print(" 检测器初始化成功")
         return True
         
     except Exception as e:
-        print(f"❌ 检测器初始化失败: {e}")
+        print(f" 检测器初始化失败: {e}")
         import traceback
         traceback.print_exc()
         if 'original_cwd' in locals():
@@ -122,6 +124,8 @@ def index():
 
 @app.route('/detect', methods=['POST'])
 def detect():
+    global current_image_path
+    
     if 'file' not in request.files:
         return "没有上传文件", 400
     
@@ -151,7 +155,10 @@ def detect():
         upload_path = os.path.join(temp_dir, unique_filename)
         
         file.save(upload_path)
-        print(f"📥 文件保存到: {upload_path}")
+        print(f" 文件保存到: {upload_path}")
+        
+        # 保存当前图片路径供后续使用
+        current_image_path = upload_path
         
         result_dir = 'static/results'
         os.makedirs(result_dir, exist_ok=True)
@@ -174,19 +181,76 @@ def detect():
                 result_data['weed_img'] = f'/static/results/weed_{unique_filename}'
                 result_data['weed_count'] = len(weed_dets) if weed_dets else 0
         
-        try:
-            os.remove(upload_path)
-            print(f"🗑️ 清理临时文件: {upload_path}")
-        except:
-            pass
+        # 保存原始图片路径到结果数据中
+        result_data['original_path'] = upload_path
         
         return render_template('index.html', **result_data)
         
     except Exception as e:
-        print(f"❌ 检测失败: {e}")
+        print(f" 检测失败: {e}")
         import traceback
         traceback.print_exc()
         return f"检测失败: {str(e)}", 500
+
+@app.route('/update_confidence', methods=['POST'])
+def update_confidence():
+    """更新置信度并重新检测"""
+    try:
+        data = request.json
+        new_confidence = float(data.get('confidence', 0.5))
+        mode = data.get('mode', 'both')
+        image_path = data.get('image_path')
+        
+        print(f"收到置信度更新请求: {new_confidence}, 模式: {mode}, 图片: {image_path}")
+        
+        if not image_path or not os.path.exists(image_path):
+            return jsonify({'success': False, 'error': '图片文件不存在'})
+        
+        # 更新检测器的置信度
+        global apple_detector, weed_detector
+        
+        if mode in ['apple', 'both'] and apple_detector:
+            apple_detector.model.conf = new_confidence
+            print(f"苹果检测器置信度已更新: {new_confidence}")
+            
+        if mode in ['weed', 'both'] and weed_detector:
+            weed_detector.model.overrides['conf'] = new_confidence
+            print(f"杂草检测器置信度已更新: {new_confidence}")
+        
+        # 重新检测
+        result_data = {'success': True, 'confidence': new_confidence}
+        
+        if mode in ['apple', 'both']:
+            apple_img, apple_dets = apple_detector.detect_image(image_path)
+            if apple_img is not None:
+                import uuid
+                unique_id = str(uuid.uuid4())[:8]
+                apple_result_name = f'apple_conf_{new_confidence}_{unique_id}.jpg'
+                apple_result_path = os.path.join('static', 'results', apple_result_name)
+                cv2.imwrite(apple_result_path, apple_img)
+                
+                result_data['apple_img'] = f'/static/results/{apple_result_name}'
+                result_data['apple_count'] = len(apple_dets) if apple_dets else 0
+        
+        if mode in ['weed', 'both']:
+            weed_img, weed_dets = weed_detector.detect_image(image_path)
+            if weed_img is not None:
+                import uuid
+                unique_id = str(uuid.uuid4())[:8]
+                weed_result_name = f'weed_conf_{new_confidence}_{unique_id}.jpg'
+                weed_result_path = os.path.join('static', 'results', weed_result_name)
+                cv2.imwrite(weed_result_path, weed_img)
+                
+                result_data['weed_img'] = f'/static/results/{weed_result_name}'
+                result_data['weed_count'] = len(weed_dets) if weed_dets else 0
+        
+        return jsonify(result_data)
+        
+    except Exception as e:
+        print(f"更新置信度时出错: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):
@@ -194,18 +258,18 @@ def serve_static(filename):
 
 if __name__ == '__main__':
     print("=" * 50)
-    print("🌐 农业检测Web服务")
+    print(" 农业检测Web服务 - 支持置信度实时更新")
     print("=" * 50)
     
     os.makedirs('temp_uploads', exist_ok=True)
     os.makedirs('static/results', exist_ok=True)
     
     if init_detectors():
-        print("✅ 系统准备就绪")
+        print(" 系统准备就绪")
     else:
-        print("⚠️  检测器初始化失败")
+        print("  检测器初始化失败")
     
     print(f"访问地址: http://127.0.0.1:5000")
     print("=" * 50)
     
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=True)
