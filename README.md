@@ -78,7 +78,7 @@ agriculture_detection_system/          # 项目根目录
    ```bash
    git clone 
 
-   cd agriculture_detection_system
+   cd agriculture_detection_system\web
 2. **安装依赖**
     ```bash
     pip install -r requirements.txt
@@ -88,7 +88,7 @@ agriculture_detection_system/          # 项目根目录
 
 4. **启动web应用**
     ```bash
-    python web/app.py 
+    python app.py 
     ```
     访问 http://127.0.0.1:5000
 
@@ -251,3 +251,4 @@ agriculture_detection_system/          # 项目根目录
 ---
 详细信息可查看相关文件  
 两个train.py不能直接使用，需要微调
+
