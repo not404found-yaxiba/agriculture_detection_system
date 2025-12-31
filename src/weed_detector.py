@@ -9,7 +9,7 @@ class WeedDetector(BaseDetector):
         
         model_path = self.config['model_path']
         
-        print(f"🌿 加载杂草检测模型: {model_path}")
+        print(f" 加载杂草检测模型: {model_path}")
         
         # 同样的相对路径解析逻辑
         config_dir = os.path.dirname(os.path.abspath(self.config['_config_file']))
@@ -22,7 +22,7 @@ class WeedDetector(BaseDetector):
                 model_abs_path = os.path.join(project_root, model_path)
                 
                 if not os.path.exists(model_abs_path):
-                    raise FileNotFoundError(f"❌ 找不到模型文件: {model_path}\n"
+                    raise FileNotFoundError(f" 找不到模型文件: {model_path}\n"
                                           f"尝试路径1: {os.path.join(config_dir, model_path)}\n"
                                           f"尝试路径2: {model_abs_path}")
             
@@ -32,7 +32,10 @@ class WeedDetector(BaseDetector):
         
         # 加载模型
         self.model = YOLO(model_path)
-        print("✅ 杂草检测模型加载成功")
+        # 设置置信度阈值
+        self.model.overrides['conf'] = self.config.get('confidence_threshold', 0.5)
+    
+        print(" 杂草检测模型加载成功")
         return True
     
     def detect_image(self, image_path):
