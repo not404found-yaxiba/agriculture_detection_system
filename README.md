@@ -73,7 +73,7 @@ agriculture_detection_system/          # 项目根目录
 - Python 3.8+
 - CUDA 11.3+（GPU推荐）或仅CPU
 
-### 安装步骤
+### 运行步骤
 1. **克隆项目**
    ```bash
    git clone 
@@ -96,26 +96,26 @@ agriculture_detection_system/          # 项目根目录
 ## ⚙️ 配置说明(可在对应文件修改)
 
 ###  苹果检测配置 (configs/apple_config.yaml)
-    ```bash
-    model_path: ../models/apple/best.pt
+
+    model_path: ../models/apple/best.pt  
     confidence_threshold: 0.5
     classes:
         0: apple
     colors:
         apple: [0, 255, 0]
     output_dir: outputs/apple_results
-    ```
+
 
 ###  杂草检测配置 (configs/weed_config.yaml)
-    ```bash
-    model_path: ../models/weed/best.pt
+
+    model_path: ../models/weed/best.pt  # 相对于configs文件夹
     confidence_threshold: 0.5
     classes:
         0: weed
     colors:
         weed: [0, 0, 255]
     output_dir: outputs/weed_results
-    ```
+
 
 ##  🏋️ 训练说明
 
