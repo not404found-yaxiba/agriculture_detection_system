@@ -13,6 +13,14 @@ class BaseDetector(ABC):
         self.classes = self.config.get('classes', {})
         self.colors = self.config.get('colors', {})
     
+    def update_confidence(self, confidence):
+        """动态更新置信度阈值"""
+        if 0 < confidence <= 1:
+            self.config['confidence_threshold'] = confidence
+            print(f"置信度阈值更新为: {confidence}")
+            return True
+        return False
+
     def load_config(self, config_path):
         with open(config_path, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
